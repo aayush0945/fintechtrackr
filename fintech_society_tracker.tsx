@@ -1,0 +1,888 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Minus, DollarSign, Users, TrendingUp, PieChart, Calendar, Download, Edit2, Trash2 } from 'lucide-react';
+
+const FinancialTracker = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [transactions, setTransactions] = useState([
+    { id: 1, type: 'income', category: 'Member Dues', amount: 1250, date: '2024-12-01', description: 'Q4 membership dues', member: 'Batch Payment' },
+    { id: 2, type: 'expense', category: 'Events', amount: 450, date: '2024-12-05', description: 'Guest speaker honorarium', member: 'Dr. Sarah Johnson' },
+    { id: 3, type: 'income', category: 'Sponsorship', amount: 2000, date: '2024-12-10', description: 'Goldman Sachs partnership', member: 'Corporate Sponsor' },
+    { id: 4, type: 'expense', category: 'Marketing', amount: 150, date: '2024-12-15', description: 'Event promotion materials', member: 'Design Team' },
+    { id: 5, type: 'expense', category: 'Venue', amount: 300, date: '2024-12-20', description: 'Conference room rental', member: 'University Booking' }
+  ]);
+
+  const [members, setMembers] = useState([
+    { id: 1, name: 'John Smith', email: 'john@example.com', status: 'paid', amount: 25, dueDate: '2024-12-01' },
+    { id: 2, name: 'Emily Chen', email: 'emily@example.com', status: 'paid', amount: 25, dueDate: '2024-12-01' },
+    { id: 3, name: 'Michael Davis', email: 'michael@example.com', status: 'pending', amount: 25, dueDate: '2024-12-01' },
+    { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', status: 'overdue', amount: 25, dueDate: '2024-11-01' },
+    { id: 5, name: 'David Brown', email: 'david@example.com', status: 'paid', amount: 25, dueDate: '2024-12-01' }
+  ]);
+
+  const [budgets, setBudgets] = useState([
+    { category: 'Events', allocated: 2000, spent: 450, remaining: 1550 },
+    { category: 'Marketing', allocated: 500, spent: 150, remaining: 350 },
+    { category: 'Venue', allocated: 1200, spent: 300, remaining: 900 },
+    { category: 'Equipment', allocated: 800, spent: 0, remaining: 800 },
+    { category: 'Miscellaneous', allocated: 300, spent: 0, remaining: 300 }
+  ]);
+
+  const [sponsors, setSponsors] = useState([
+    { 
+      id: 1, 
+      name: 'Goldman Sachs', 
+      tier: 'Platinum', 
+      amount: 5000, 
+      status: 'active', 
+      benefits: ['Logo on website', 'Event booth', 'Newsletter mention'],
+      contactPerson: 'Sarah Johnson',
+      email: 'sarah.johnson@gs.com',
+      renewalDate: '2025-06-01',
+      received: true
+    },
+    { 
+      id: 2, 
+      name: 'JPMorgan Chase', 
+      tier: 'Gold', 
+      amount: 3000, 
+      status: 'active', 
+      benefits: ['Logo on website', 'Newsletter mention'],
+      contactPerson: 'Michael Chen',
+      email: 'michael.chen@jpmorgan.com',
+      renewalDate: '2025-08-15',
+      received: true
+    },
+    { 
+      id: 3, 
+      name: 'Fintech Startups Inc', 
+      tier: 'Silver', 
+      amount: 1500, 
+      status: 'pending', 
+      benefits: ['Newsletter mention'],
+      contactPerson: 'Emily Rodriguez',
+      email: 'emily@fintechstartups.com',
+      renewalDate: '2025-03-20',
+      received: false
+    },
+    { 
+      id: 4, 
+      name: 'Trading Technologies', 
+      tier: 'Bronze', 
+      amount: 800, 
+      status: 'expired', 
+      benefits: ['Website listing'],
+      contactPerson: 'David Wilson',
+      email: 'david@tradingtech.com',
+      renewalDate: '2024-12-01',
+      received: true
+    },
+    { 
+      id: 5, 
+      name: 'Blockchain Solutions', 
+      tier: 'Silver', 
+      amount: 1500, 
+      status: 'negotiating', 
+      benefits: ['Newsletter mention', 'Event collaboration'],
+      contactPerson: 'Lisa Park',
+      email: 'lisa@blockchainsol.com',
+      renewalDate: '2025-09-10',
+      received: false
+    }
+  ]);
+
+  const [newTransaction, setNewTransaction] = useState({
+    type: 'expense',
+    category: '',
+    amount: '',
+    date: '',
+    description: '',
+    member: ''
+  });
+
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showAddSponsor, setShowAddSponsor] = useState(false);
+
+  const [newSponsor, setNewSponsor] = useState({
+    name: '',
+    tier: 'Bronze',
+    amount: '',
+    contactPerson: '',
+    email: '',
+    renewalDate: '',
+    benefits: [],
+    status: 'negotiating'
+  });
+
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const netBalance = totalIncome - totalExpenses;
+
+  const totalSponsorshipValue = sponsors.reduce((sum, s) => sum + s.amount, 0);
+  const activeSponsorships = sponsors.filter(s => s.status === 'active').length;
+  const pendingSponsorships = sponsors.filter(s => s.status === 'pending').length;
+  const sponsorshipReceived = sponsors.filter(s => s.received).reduce((sum, s) => sum + s.amount, 0);
+
+  const paidMembers = members.filter(m => m.status === 'paid').length;
+  const pendingMembers = members.filter(m => m.status === 'pending').length;
+  const overdueMembers = members.filter(m => m.status === 'overdue').length;
+
+  const handleAddTransaction = () => {
+    if (newTransaction.category && newTransaction.amount && newTransaction.date) {
+      const transaction = {
+        id: Date.now(),
+        ...newTransaction,
+        amount: parseFloat(newTransaction.amount)
+      };
+      setTransactions([transaction, ...transactions]);
+      setNewTransaction({
+        type: 'expense',
+        category: '',
+        amount: '',
+        date: '',
+        description: '',
+        member: ''
+      });
+      setShowAddTransaction(false);
+    }
+  };
+
+  const deleteTransaction = (id) => {
+    setTransactions(transactions.filter(t => t.id !== id));
+  };
+
+  const updateMemberStatus = (id, newStatus) => {
+    setMembers(members.map(m => 
+      m.id === id ? { ...m, status: newStatus } : m
+    ));
+  };
+
+  const handleAddSponsor = () => {
+    if (newSponsor.name && newSponsor.amount && newSponsor.contactPerson) {
+      const sponsor = {
+        id: Date.now(),
+        ...newSponsor,
+        amount: parseFloat(newSponsor.amount),
+        received: false
+      };
+      setSponsors([sponsor, ...sponsors]);
+      setNewSponsor({
+        name: '',
+        tier: 'Bronze',
+        amount: '',
+        contactPerson: '',
+        email: '',
+        renewalDate: '',
+        benefits: [],
+        status: 'negotiating'
+      });
+      setShowAddSponsor(false);
+    }
+  };
+
+  const updateSponsorStatus = (id, newStatus) => {
+    setSponsors(sponsors.map(s => 
+      s.id === id ? { ...s, status: newStatus } : s
+    ));
+  };
+
+  const toggleSponsorPayment = (id) => {
+    setSponsors(sponsors.map(s => 
+      s.id === id ? { ...s, received: !s.received } : s
+    ));
+  };
+
+  const exportData = () => {
+    const data = {
+      summary: {
+        totalIncome,
+        totalExpenses,
+        netBalance,
+        memberStats: { paid: paidMembers, pending: pendingMembers, overdue: overdueMembers }
+      },
+      transactions,
+      members,
+      budgets
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fintech-society-finance-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  const StatCard = ({ title, value, icon: Icon, color, subtitle }) => (
+    <div className="bg-white p-6 rounded-lg shadow-md border-l-4" style={{ borderLeftColor: color }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+        </div>
+        <Icon className="h-8 w-8" style={{ color }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Fintech Society Finance Tracker</h1>
+          <p className="text-gray-600">Treasurer Dashboard - Track finances, manage budgets, and monitor member dues</p>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex space-x-4 mb-6">
+          {['overview', 'transactions', 'members', 'budget', 'sponsors'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === tab
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+          <button
+            onClick={exportData}
+            className="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+          >
+            <Download className="h-4 w-4" />
+            <span>Export Data</span>
+          </button>
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Financial Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                title="Total Income"
+                value={`$${totalIncome.toLocaleString()}`}
+                icon={TrendingUp}
+                color="#10b981"
+                subtitle="This fiscal year"
+              />
+              <StatCard
+                title="Total Expenses"
+                value={`$${totalExpenses.toLocaleString()}`}
+                icon={Minus}
+                color="#ef4444"
+                subtitle="This fiscal year"
+              />
+              <StatCard
+                title="Net Balance"
+                value={`$${netBalance.toLocaleString()}`}
+                icon={DollarSign}
+                color={netBalance >= 0 ? "#10b981" : "#ef4444"}
+                subtitle={netBalance >= 0 ? "Profit" : "Loss"}
+              />
+            </div>
+
+            {/* Member Status */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                title="Paid Members"
+                value={paidMembers}
+                icon={Users}
+                color="#10b981"
+                subtitle={`${((paidMembers / members.length) * 100).toFixed(1)}% of total`}
+              />
+              <StatCard
+                title="Pending Dues"
+                value={pendingMembers}
+                icon={Calendar}
+                color="#f59e0b"
+                subtitle="Need follow-up"
+              />
+              <StatCard
+                title="Overdue"
+                value={overdueMembers}
+                icon={Calendar}
+                color="#ef4444"
+                subtitle="Requires action"
+              />
+            </div>
+
+            {/* Sponsorship Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                title="Total Sponsorship Value"
+                value={`${totalSponsorshipValue.toLocaleString()}`}
+                icon={DollarSign}
+                color="#8b5cf6"
+                subtitle="All tiers combined"
+              />
+              <StatCard
+                title="Active Sponsors"
+                value={activeSponsorships}
+                icon={TrendingUp}
+                color="#10b981"
+                subtitle={`${pendingSponsorships} pending`}
+              />
+              <StatCard
+                title="Received Amount"
+                value={`${sponsorshipReceived.toLocaleString()}`}
+                icon={DollarSign}
+                color="#06b6d4"
+                subtitle="Confirmed payments"
+              />
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+              <div className="space-y-3">
+                {transactions.slice(0, 5).map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-full ${
+                        transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                      </div>
+                      <div>
+                        <p className="font-medium">{transaction.description}</p>
+                        <p className="text-sm text-gray-500">{transaction.category} • {transaction.date}</p>
+                      </div>
+                    </div>
+                    <span className={`font-semibold ${
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transactions Tab */}
+        {activeTab === 'transactions' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Transaction History</h2>
+              <button
+                onClick={() => setShowAddTransaction(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Transaction</span>
+              </button>
+            </div>
+
+            {/* Add Transaction Form */}
+            {showAddTransaction && (
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Add New Transaction</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      value={newTransaction.type}
+                      onChange={(e) => setNewTransaction({...newTransaction, type: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="expense">Expense</option>
+                      <option value="income">Income</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <input
+                      type="text"
+                      value={newTransaction.category}
+                      onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., Events, Marketing, Sponsorship"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                    <input
+                      type="number"
+                      value={newTransaction.amount}
+                      onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={newTransaction.date}
+                      onChange={(e) => setNewTransaction({...newTransaction, date: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input
+                      type="text"
+                      value={newTransaction.description}
+                      onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Brief description of the transaction"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    onClick={() => setShowAddTransaction(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddTransaction}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Add Transaction
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction List */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {transactions.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          transaction.type === 'income' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {transaction.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.category}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{transaction.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                          {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() => deleteTransaction(transaction.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Members Tab */}
+        {activeTab === 'members' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Member Management</h2>
+            
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {members.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.dueDate}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${member.amount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          member.status === 'paid' 
+                            ? 'bg-green-100 text-green-800' 
+                            : member.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {member.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <select
+                          value={member.status}
+                          onChange={(e) => updateMemberStatus(member.id, e.target.value)}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="paid">Paid</option>
+                          <option value="pending">Pending</option>
+                          <option value="overdue">Overdue</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Budget Tab */}
+        {activeTab === 'budget' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Budget Overview</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {budgets.map((budget, index) => (
+                <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{budget.category}</h3>
+                    <PieChart className="h-5 w-5 text-gray-500" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Allocated</span>
+                      <span className="font-medium">${budget.allocated.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Spent</span>
+                      <span className="font-medium text-red-600">${budget.spent.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Remaining</span>
+                      <span className="font-medium text-green-600">${budget.remaining.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Progress</span>
+                      <span>{((budget.spent / budget.allocated) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((budget.spent / budget.allocated) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sponsors Tab */}
+        {activeTab === 'sponsors' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Sponsorship Management</h2>
+              <button
+                onClick={() => setShowAddSponsor(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Sponsor</span>
+              </button>
+            </div>
+
+            {/* Sponsorship Tiers Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[
+                { tier: 'Platinum', sponsors: sponsors.filter(s => s.tier === 'Platinum'), color: '#e5e7eb' },
+                { tier: 'Gold', sponsors: sponsors.filter(s => s.tier === 'Gold'), color: '#fbbf24' },
+                { tier: 'Silver', sponsors: sponsors.filter(s => s.tier === 'Silver'), color: '#6b7280' },
+                { tier: 'Bronze', sponsors: sponsors.filter(s => s.tier === 'Bronze'), color: '#cd7c2f' }
+              ].map((tierData) => (
+                <div key={tierData.tier} className="bg-white p-4 rounded-lg shadow-md">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tierData.color }}></div>
+                    <h3 className="font-semibold">{tierData.tier}</h3>
+                  </div>
+                  <p className="text-2xl font-bold">{tierData.sponsors.length}</p>
+                  <p className="text-sm text-gray-600">
+                    ${tierData.sponsors.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Add Sponsor Form */}
+            {showAddSponsor && (
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Add New Sponsor</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                    <input
+                      type="text"
+                      value={newSponsor.name}
+                      onChange={(e) => setNewSponsor({...newSponsor, name: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
+                    <select
+                      value={newSponsor.tier}
+                      onChange={(e) => setNewSponsor({...newSponsor, tier: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="Bronze">Bronze</option>
+                      <option value="Silver">Silver</option>
+                      <option value="Gold">Gold</option>
+                      <option value="Platinum">Platinum</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                    <input
+                      type="number"
+                      value={newSponsor.amount}
+                      onChange={(e) => setNewSponsor({...newSponsor, amount: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                    <input
+                      type="text"
+                      value={newSponsor.contactPerson}
+                      onChange={(e) => setNewSponsor({...newSponsor, contactPerson: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Primary contact name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={newSponsor.email}
+                      onChange={(e) => setNewSponsor({...newSponsor, email: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="contact@company.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Renewal Date</label>
+                    <input
+                      type="date"
+                      value={newSponsor.renewalDate}
+                      onChange={(e) => setNewSponsor({...newSponsor, renewalDate: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    onClick={() => setShowAddSponsor(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddSponsor}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Add Sponsor
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sponsors List */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Renewal</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sponsors.map((sponsor) => (
+                    <tr key={sponsor.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{sponsor.name}</div>
+                          <div className="text-sm text-gray-500">{sponsor.contactPerson}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          sponsor.tier === 'Platinum' ? 'bg-gray-100 text-gray-800' :
+                          sponsor.tier === 'Gold' ? 'bg-yellow-100 text-yellow-800' :
+                          sponsor.tier === 'Silver' ? 'bg-gray-100 text-gray-600' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {sponsor.tier}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${sponsor.amount.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>{sponsor.contactPerson}</div>
+                        <div className="text-gray-500">{sponsor.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          sponsor.status === 'active' ? 'bg-green-100 text-green-800' :
+                          sponsor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          sponsor.status === 'negotiating' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {sponsor.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => toggleSponsorPayment(sponsor.id)}
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            sponsor.received 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }`}
+                        >
+                          {sponsor.received ? 'Received' : 'Pending'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {sponsor.renewalDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <select
+                          value={sponsor.status}
+                          onChange={(e) => updateSponsorStatus(sponsor.id, e.target.value)}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="negotiating">Negotiating</option>
+                          <option value="active">Active</option>
+                          <option value="pending">Pending</option>
+                          <option value="expired">Expired</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Sponsor Benefits Overview */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">Sponsorship Benefits by Tier</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { tier: 'Platinum', benefits: ['Logo on website', 'Event booth', 'Newsletter mention', 'Speaking opportunity'], color: '#e5e7eb' },
+                  { tier: 'Gold', benefits: ['Logo on website', 'Newsletter mention', 'Event collaboration'], color: '#fbbf24' },
+                  { tier: 'Silver', benefits: ['Newsletter mention', 'Website listing'], color: '#6b7280' },
+                  { tier: 'Bronze', benefits: ['Website listing'], color: '#cd7c2f' }
+                ].map((tierData) => (
+                  <div key={tierData.tier} className="border rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tierData.color }}></div>
+                      <h4 className="font-semibold">{tierData.tier}</h4>
+                    </div>
+                    <ul className="text-sm space-y-1">
+                      {tierData.benefits.map((benefit, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-green-500 mr-2">✓</span>
+                          {benefit}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Budget Tab */}
+        {activeTab === 'budget' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">Budget Overview</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {budgets.map((budget, index) => (
+                <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{budget.category}</h3>
+                    <PieChart className="h-5 w-5 text-gray-500" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Allocated</span>
+                      <span className="font-medium">${budget.allocated.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Spent</span>
+                      <span className="font-medium text-red-600">${budget.spent.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Remaining</span>
+                      <span className="font-medium text-green-600">${budget.remaining.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Progress</span>
+                      <span>{((budget.spent / budget.allocated) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((budget.spent / budget.allocated) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default FinancialTracker;
